@@ -164,6 +164,22 @@ services:
         limits:
           cpus: '0.50'
           memory: 512M
+  user:
+    build: ./user-service/
+    image: user-service:0.1
+    container_name: user-service
+    links:
+      - eureka
+    ports:
+      - "50621:50621"
+    networks:
+      micro_network:
+        ipv4_address: 172.19.0.8
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
 
 
 networks:
