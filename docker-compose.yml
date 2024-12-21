@@ -12,6 +12,10 @@ services:
         - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      micro_network:
+        ipv4_address: 172.19.0.9
+
 
   zookeeper:
     container_name: zookeeper
@@ -54,10 +58,128 @@ services:
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9093
       - KAFKA_CLUSTERS_0_ZOOKEEPER=localhost:2181
 
+
+  eureka:
+    build: ./eureka-server/
+    image: eureka-server:0.1
+    container_name: eureka
+    ports:
+      - "58683:58683"
+    networks:
+      micro_network:
+        ipv4_address: 172.19.0.2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+
+  gateway:
+    build: ./gateway/
+    image: gateway:0.1
+    container_name: gateway
+    ports:
+      - "8080:8080"
+    links:
+      - eureka
+    volumes:
+      - log:/app/log
+    networks:
+      micro_network:
+        ipv4_address: 172.19.0.3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 1G
+
+
+  config:
+    build: ./config-server/
+    image: config-server:0.1
+    container_name: config
+    ports:
+      - "8888:8888"
+    links:
+      - eureka
+    volumes:
+      - log:/app/log
+    networks:
+      micro_network:
+        ipv4_address: 172.19.0.4
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+
+  migration:
+    build: ./migration/
+    image: migration:0.1
+    container_name: migration
+    ports:
+      - "56666:56666"
+    volumes:
+      - log:/app/log
+    networks:
+      micro_network:
+        ipv4_address: 172.19.0.5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+  auth:
+    build: ./auth-service/
+    image: auth-service:0.1
+    container_name: auth-service
+    links:
+      - eureka
+    ports:
+      - "58683:58683"
+    networks:
+      micro_network:
+        ipv4_address: 172.19.0.6
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+  job:
+    build: ./job-service/
+    image: job-service:0.1
+    container_name: job-service
+    links:
+      - eureka
+    ports:
+      - "50650:50650"
+    networks:
+      micro_network:
+        ipv4_address: 172.19.0.7
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+
+networks:
+  micro_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.19.0.0/16"
+
 volumes:
   zookeeper_data:
     driver: local
   kafka_data:
     driver: local
   postgres_data:
+    driver: local
+  log:
     driver: local
